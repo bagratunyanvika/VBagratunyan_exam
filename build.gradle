@@ -1,20 +1,74 @@
+// Плагины. Блок верхнего уровня в котором мы расширяем Gradle
+// готовыми библиотеками и применяем таски этих библиотек в проекте
 plugins {
+    // Java - это основной плагин, который поставляется вместе в Gradle
     id 'java'
+    // Плагин для работы с Allure
+    id "io.qameta.allure" version "2.11.2"
+    id("ru.iopump.qa.allure") version "0.1.2"
+    // Плагин retry
+    id 'org.gradle.test-retry' version '1.5.4'
 }
 
-group = 'org.example'
-version = '1.0-SNAPSHOT'
+// Группа этого проекта. Группа по умолчанию использует путь с точками в качестве разделителей.
+group 'org.example'
+// Версия проекта
+version '1.0-SNAPSHOT'
 
+// Репозиторий (Хранилище). В блоке репозиторий указывается откуда именно будут скачиваться библиотеки,
+// которые используются в проекте.
 repositories {
+    // MavenCentral - это главный репозиторий с большинством доступных библиотек
     mavenCentral()
 }
 
+// Зависимости. Перечисляются используемые в проекте библиотеки
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Junit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
+    // Для параметризации
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.1'
+    // Allure
+    testImplementation group: 'io.qameta.allure', name: 'allure-rest-assured', version: '2.17.3'
+    testImplementation group: 'io.qameta.allure', name: 'allure-java-commons', version: '2.17.3'
+    testImplementation group: 'io.qameta.allure', name: 'allure-junit5', version: '2.17.3'
+    // AspectJ
+    runtimeOnly 'org.aspectj:aspectjweaver:1.9.19'
+    // Rest-Assured
+    implementation 'io.rest-assured:rest-assured:5.4.0'
+    // JSON
+    testImplementation 'org.json:json:20240205'
+    implementation 'com.jayway.jsonpath:json-path:2.8.0'
+    // Hamcrest
+    testImplementation 'org.hamcrest:hamcrest-all:1.3'
 }
 
+// Получаем переменную, если её нет то Null
+def pack = System.getenv("PACK")
+
+// Тест. Определяет что будет исполняться при вызове таски "test"
 test {
+    // Количество повторений упавших тестов
+    retry {
+        maxRetries = 1
+    }
+    if (pack) {
+        filter {
+            if (pack.contains("without")) {
+                // Исключаем тестовые пакеты если PACK содержит 'without'
+                excludeTestsMatching "tests.AllureTest.*"
+                excludeTestsMatching "tests.AllureWithAssertTest.*"
+            } else if (pack.contains("allure")) {
+                // Запускаем только Allure пакетов, если PACK содержит 'allure'
+                includeTestsMatching "tests.AllureTest.*"
+                includeTestsMatching "tests.AllureWithAssertTest.*"
+            } else {
+                // Иначе запускаем только тесты из указанного в PACK пакета
+                includeTestsMatching pack
+            }
+        }
+    }
+    // Находит и выполняет тесты построенные на платформе Junit
     useJUnitPlatform()
 }
