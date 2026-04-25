@@ -83,17 +83,6 @@ public class Requests extends ApiConfig {
                 .response();
     }
 
-    public Response createBookWithoutAuth(String jsonBody) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(jsonBody)
-                .when()
-                .post("/books")
-                .then()
-                .extract()
-                .response();
-    }
-
     public Response addReview(int bookId, String jsonBody) {
         return given()
                 .contentType(ContentType.JSON)
